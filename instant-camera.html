@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>instant 📷</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&family=Share+Tech+Mono&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:#1a1a18;overflow-x:hidden;}
+#app{max-width:430px;margin:0 auto;background:#1a1a18;display:flex;flex-direction:column;align-items:center;padding:20px 16px 40px;gap:16px;min-height:100vh;}
+h1{font-family:'Caveat',cursive;font-size:28px;color:#f0ebe0;letter-spacing:1px;text-align:center;font-weight:600;}
+
+#camera-screen{width:100%;display:flex;flex-direction:column;align-items:center;gap:14px;}
+#viewfinder-wrap{width:100%;aspect-ratio:1;border-radius:12px;overflow:hidden;background:#0d0d0d;position:relative;border:1px solid #2a2a28;}
+#video{width:100%;height:100%;object-fit:cover;display:block;}
+#cam-ui{position:absolute;inset:0;pointer-events:none;}
+.corner{position:absolute;width:24px;height:24px;border-color:rgba(255,255,255,0.4);border-style:solid;}
+.tl{top:12px;left:12px;border-width:2px 0 0 2px;}.tr{top:12px;right:12px;border-width:2px 2px 0 0;}
+.bl{bottom:12px;left:12px;border-width:0 0 2px 2px;}.br{bottom:12px;right:12px;border-width:0 2px 2px 0;}
+#cam-date{position:absolute;bottom:14px;right:16px;font-family:'Share Tech Mono',monospace;font-size:14px;color:#ff9800;text-shadow:0 0 6px rgba(255,152,0,0.8);opacity:0;transition:opacity 0.2s;pointer-events:none;}
+#cam-date.visible{opacity:1;}
+#film-counter{position:absolute;top:12px;right:12px;background:rgba(0,0,0,0.65);border:1px solid rgba(255,152,0,0.4);border-radius:4px;padding:3px 8px;font-family:'Share Tech Mono',monospace;font-size:13px;color:#ff9800;text-shadow:0 0 5px rgba(255,152,0,0.7);display:flex;align-items:center;gap:4px;pointer-events:none;}
+#fc-num{font-size:17px;font-weight:bold;min-width:22px;text-align:right;}
+.fc-sep{opacity:0.5;}.fc-total{opacity:0.5;font-size:11px;}
+#burst-indicator{position:absolute;top:12px;left:12px;display:none;gap:5px;pointer-events:none;}
+#burst-indicator.active{display:flex;}
+.burst-dot{width:8px;height:8px;border-radius:50%;background:#c9943a;opacity:0.3;transition:opacity 0.1s,transform 0.1s;}
+.burst-dot.lit{opacity:1;transform:scale(1.3);}
+#strip-indicator{position:absolute;top:12px;left:12px;display:none;align-items:center;gap:6px;background:rgba(0,0,0,0.65);border:1px solid rgba(201,148,58,0.4);border-radius:4px;padding:3px 8px;pointer-events:none;}
+#strip-indicator.active{display:flex;}
+.strip-frame{width:8px;height:11px;border:1px solid rgba(201,148,58,0.5);border-radius:1px;transition:background 0.15s;}
+.strip-frame.lit{background:#c9943a;}
+#strip-count-txt{font-family:'Share Tech Mono',monospace;font-size:11px;color:#c9943a;}
+#countdown-overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.35);}
+#countdown-overlay.active{display:flex;}
+#countdown-num{font-family:'Share Tech Mono',monospace;font-size:100px;color:#fff;text-shadow:0 0 30px rgba(255,255,255,0.5);animation:pulse 1s ease-out infinite;}
+@keyframes pulse{0%{transform:scale(1.1);opacity:1}80%{transform:scale(0.9);opacity:0.7}100%{transform:scale(1);opacity:1}}
+#no-cam{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#666;font-size:14px;cursor:pointer;}
+#no-cam i{font-size:44px;color:#444;}
+#flash-ring{position:absolute;inset:0;background:white;opacity:0;pointer-events:none;border-radius:12px;transition:opacity 0.05s;}
+
+.cam-controls{display:flex;align-items:center;justify-content:space-between;width:100%;padding:0 8px;}
+#gallery-btn{width:56px;height:56px;border-radius:10px;border:1px solid #333;background:#252523;overflow:hidden;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+#gallery-btn i{font-size:24px;color:#888;}
+#gallery-thumb{width:100%;height:100%;object-fit:cover;display:none;}
+
+#shutter-btn{
+  width:76px;height:76px;min-width:76px;min-height:76px;
+  border-radius:50%;
+  border:3px solid #c9943a;
+  background:#ffffff;
+  cursor:pointer;flex-shrink:0;
+  outline:2px solid rgba(201,148,58,0.25);
+  outline-offset:4px;
+  box-shadow:0 0 16px rgba(201,148,58,0.35);
+  transition:transform 0.12s,box-shadow 0.15s;
+  -webkit-tap-highlight-color:transparent;
+}
+#shutter-btn:active{transform:scale(0.90);box-shadow:0 0 6px rgba(201,148,58,0.2);}
+#shutter-btn.counting{background:#fff8ee;border-color:#ff9800;box-shadow:0 0 20px rgba(255,152,0,0.6);outline-color:rgba(255,152,0,0.3);}
+
+#flip-btn{width:56px;height:56px;border-radius:50%;border:1px solid #333;background:#252523;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;-webkit-tap-highlight-color:transparent;}
+#flip-btn i{font-size:24px;color:#888;}
+
+.options-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;width:100%;}
+.opt-btn{padding:9px 3px;border-radius:8px;border:1px solid #333;background:#252523;color:#888;font-size:10px;cursor:pointer;text-align:center;display:flex;flex-direction:column;align-items:center;gap:3px;transition:all 0.15s;-webkit-tap-highlight-color:transparent;}
+.opt-btn i{font-size:16px;}
+.opt-btn.on{border-color:#c9943a;color:#c9943a;background:rgba(201,148,58,0.08);}
+.timer-opts{display:none;grid-template-columns:1fr 1fr 1fr;gap:8px;width:100%;}
+.timer-opts.visible{display:grid;}
+.t-btn{padding:9px;border-radius:8px;border:1px solid #333;background:#252523;color:#888;font-size:13px;cursor:pointer;text-align:center;font-family:'Share Tech Mono',monospace;transition:all 0.15s;}
+.t-btn.active{border-color:#c9943a;color:#c9943a;background:rgba(201,148,58,0.08);}
+#file-input{display:none;}
+
+/* POLAROID */
+#polaroid-screen{width:100%;display:none;flex-direction:column;align-items:center;gap:14px;}
+#polaroid{width:300px;background:#f5f0e8;padding:14px 14px 56px;box-shadow:0 8px 36px rgba(0,0,0,0.65);position:relative;transform:rotate(-1.5deg);isolation:isolate;}
+#polaroid::before{content:'';position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.07'/%3E%3C/svg%3E");background-size:300px 300px;pointer-events:none;z-index:2;}
+#photo-wrap{position:relative;width:100%;aspect-ratio:1;overflow:hidden;}
+#polaroid-img{width:100%;height:100%;object-fit:cover;display:block;}
+#grain-overlay{position:absolute;inset:0;pointer-events:none;z-index:1;opacity:0.18;mix-blend-mode:multiply;}
+#vignette-overlay{position:absolute;inset:0;pointer-events:none;z-index:2;}
+#tint-overlay{position:absolute;inset:0;pointer-events:none;z-index:3;}
+#date-stamp{position:absolute;bottom:10px;right:10px;font-family:'Share Tech Mono',monospace;font-size:11px;color:#ff9800;text-shadow:0 0 4px rgba(255,152,0,0.7);z-index:4;display:none;}
+#note-input{position:absolute;bottom:8px;left:10px;right:10px;height:40px;background:transparent;border:none;outline:none;font-family:'Caveat',cursive;font-size:22px;font-weight:600;color:#2e2318;text-align:center;width:calc(100% - 20px);z-index:3;text-shadow:0.5px 0.5px 0 rgba(0,0,0,0.15);}
+#note-input::placeholder{color:#b0a898;}
+
+/* STRIP */
+#strip-screen{width:100%;display:none;flex-direction:column;align-items:center;gap:14px;}
+#strip-wrap{display:flex;flex-direction:column;align-items:center;gap:0;background:#f0ebe0;padding:10px 12px 16px;width:210px;box-shadow:0 8px 40px rgba(0,0,0,0.65);transform:rotate(1deg);}
+.strip-cell{width:186px;background:#f5f0e8;padding:8px 8px 34px;position:relative;margin-bottom:2px;isolation:isolate;}
+.strip-cell::before{content:'';position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");pointer-events:none;z-index:2;}
+.strip-photo-wrap{position:relative;width:100%;aspect-ratio:1;overflow:hidden;}
+.strip-img{width:100%;height:100%;object-fit:cover;display:block;}
+.strip-grain{position:absolute;inset:0;pointer-events:none;z-index:1;opacity:0.16;mix-blend-mode:multiply;}
+.strip-vignette{position:absolute;inset:0;pointer-events:none;z-index:2;background:radial-gradient(ellipse at center,transparent 42%,rgba(0,0,0,0.5) 100%);}
+.strip-note{position:absolute;bottom:5px;left:6px;right:6px;height:28px;background:transparent;border:none;outline:none;font-family:'Caveat',cursive;font-size:17px;font-weight:600;color:#2e2318;text-align:center;width:calc(100% - 12px);z-index:3;}
+.strip-note::placeholder{color:#c0b8a8;}
+
+.tint-row{display:flex;gap:7px;width:300px;}
+.tint-btn{flex:1;padding:8px 3px;border-radius:7px;border:1px solid #333;background:#252523;color:#888;font-size:10px;cursor:pointer;text-align:center;transition:all 0.15s;-webkit-tap-highlight-color:transparent;}
+.tint-btn.active{border-color:#c9943a;color:#c9943a;background:rgba(201,148,58,0.08);}
+.strip-tint-row{display:flex;gap:6px;width:210px;}
+.strip-tint-row .tint-btn{font-size:9px;padding:7px 2px;}
+
+.edit-row{display:flex;gap:10px;}
+.edit-row.wide{width:300px;}.edit-row.strip-wide{width:210px;}
+.action-btn{flex:1;padding:11px;border-radius:9px;border:0.5px solid rgba(240,235,224,0.2);background:rgba(240,235,224,0.07);color:#f0ebe0;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background 0.15s;-webkit-tap-highlight-color:transparent;}
+.action-btn:active{background:rgba(240,235,224,0.16);}
+.action-btn i{font-size:16px;}
+.action-btn.gold{border-color:rgba(201,148,58,0.4);color:#c9943a;background:rgba(201,148,58,0.07);}
+
+/* GALLERY */
+#gallery-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:100;display:none;flex-direction:column;}
+#gallery-overlay.open{display:flex;}
+#gallery-header{padding:18px 16px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid #2a2a28;}
+#gallery-header h2{font-family:'Caveat',cursive;font-size:24px;color:#f0ebe0;font-weight:600;}
+#gallery-close{background:transparent;border:none;color:#888;font-size:26px;cursor:pointer;line-height:1;padding:4px;display:flex;align-items:center;justify-content:center;}
+#gallery-grid{flex:1;overflow-y:auto;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;-webkit-overflow-scrolling:touch;}
+.gallery-item{aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:pointer;position:relative;border:1px solid #2a2a28;}
+.gallery-item img{width:100%;height:100%;object-fit:cover;display:block;}
+.gallery-item .g-label{position:absolute;bottom:0;left:0;right:0;padding:5px 8px;background:rgba(0,0,0,0.65);font-family:'Caveat',cursive;font-size:14px;color:#f0ebe0;text-align:center;}
+#gallery-empty{flex:1;display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:#555;font-size:14px;}
+#gallery-empty i{font-size:44px;color:#2a2a28;}
+canvas{display:none;}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>📷 instant</h1>
+
+  <div id="camera-screen">
+    <div id="viewfinder-wrap">
+      <video id="video" autoplay playsinline muted></video>
+      <div id="cam-ui">
+        <div class="corner tl"></div><div class="corner tr"></div>
+        <div class="corner bl"></div><div class="corner br"></div>
+        <div id="cam-date"></div>
+        <div id="film-counter"><span id="fc-num">01</span><span class="fc-sep">/</span><span class="fc-total">24</span></div>
+        <div id="burst-indicator"><div class="burst-dot" id="bd0"></div><div class="burst-dot" id="bd1"></div><div class="burst-dot" id="bd2"></div></div>
+        <div id="strip-indicator"><div class="strip-frame" id="sf0"></div><div class="strip-frame" id="sf1"></div><div class="strip-frame" id="sf2"></div><div class="strip-frame" id="sf3"></div><span id="strip-count-txt">0/4</span></div>
+      </div>
+      <div id="countdown-overlay"><span id="countdown-num">3</span></div>
+      <div id="flash-ring"></div>
+      <div id="no-cam"><i class="ti ti-camera-off"></i><span>tap to enable camera</span><span style="font-size:12px;color:#444">or use the gallery button below</span></div>
+    </div>
+
+    <div class="cam-controls">
+      <label id="gallery-btn" for="file-input"><img id="gallery-thumb" alt=""><i class="ti ti-photo" id="gallery-icon"></i></label>
+      <button id="shutter-btn" onclick="triggerShutter()" aria-label="Take photo"></button>
+      <button id="flip-btn" onclick="flipCamera()"><i class="ti ti-camera-rotate"></i></button>
+    </div>
+
+    <div class="options-row">
+      <button class="opt-btn" id="date-toggle" onclick="toggleDate()"><i class="ti ti-calendar"></i><span>date</span></button>
+      <button class="opt-btn" id="timer-toggle" onclick="toggleTimerMenu()"><i class="ti ti-clock"></i><span id="timer-label">timer</span></button>
+      <button class="opt-btn" id="burst-toggle" onclick="toggleMode('burst')"><i class="ti ti-bolt"></i><span>burst</span></button>
+      <button class="opt-btn" id="strip-toggle" onclick="toggleMode('strip')"><i class="ti ti-layout-list"></i><span>strip</span></button>
+    </div>
+    <div class="timer-opts" id="timer-opts">
+      <button class="t-btn active" onclick="setTimer(0,this)">off</button>
+      <button class="t-btn" onclick="setTimer(3,this)">3s</button>
+      <button class="t-btn" onclick="setTimer(10,this)">10s</button>
+    </div>
+
+    <button class="action-btn gold" onclick="openGallery()" style="width:100%"><i class="ti ti-photo-album"></i> my roll (<span id="roll-count">0</span> shots)</button>
+    <input type="file" id="file-input" accept="image/*" onchange="useFile(event)">
+  </div>
+
+  <div id="polaroid-screen">
+    <div id="polaroid">
+      <div id="photo-wrap">
+        <img id="polaroid-img" src="" alt="photo">
+        <canvas id="grain-overlay"></canvas>
+        <div id="vignette-overlay"></div>
+        <div id="tint-overlay"></div>
+        <div id="date-stamp"></div>
+      </div>
+      <input id="note-input" type="text" placeholder="write something..." maxlength="40">
+    </div>
+    <div class="tint-row">
+      <button class="tint-btn active" onclick="setTint('none',this)">none</button>
+      <button class="tint-btn" onclick="setTint('warm',this)">🌅 warm</button>
+      <button class="tint-btn" onclick="setTint('cool',this)">🩵 cool</button>
+      <button class="tint-btn" onclick="setTint('fade',this)">🌫 fade</button>
+      <button class="tint-btn" onclick="setTint('green',this)">🌿 fuji</button>
+    </div>
+    <div class="edit-row wide">
+      <button class="action-btn" onclick="retake()"><i class="ti ti-arrow-left"></i> retake</button>
+      <button class="action-btn" onclick="sharePhoto()"><i class="ti ti-share"></i> share</button>
+      <button class="action-btn gold" onclick="savePhoto()"><i class="ti ti-download"></i> save</button>
+    </div>
+  </div>
+
+  <div id="strip-screen">
+    <div id="strip-wrap"></div>
+    <div class="strip-tint-row">
+      <button class="tint-btn active" onclick="setStripTint('none',this)">none</button>
+      <button class="tint-btn" onclick="setStripTint('warm',this)">🌅</button>
+      <button class="tint-btn" onclick="setStripTint('cool',this)">🩵</button>
+      <button class="tint-btn" onclick="setStripTint('fade',this)">🌫</button>
+      <button class="tint-btn" onclick="setStripTint('green',this)">🌿</button>
+    </div>
+    <div class="edit-row strip-wide">
+      <button class="action-btn" onclick="retake()"><i class="ti ti-arrow-left"></i> retake</button>
+      <button class="action-btn gold" onclick="saveStrip()"><i class="ti ti-download"></i> save</button>
+    </div>
+  </div>
+
+  <div id="gallery-overlay">
+    <div id="gallery-header">
+      <h2>my roll</h2>
+      <button id="gallery-close" onclick="closeGallery()"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="gallery-grid"></div>
+    <div id="gallery-empty"><i class="ti ti-camera"></i><span>no shots yet — go take some!</span></div>
+  </div>
+
+  <canvas id="canvas"></canvas>
+</div>
+
+<script>
+const video=document.getElementById('video'),canvas=document.getElementById('canvas');
+const flashRing=document.getElementById('flash-ring'),noCam=document.getElementById('no-cam');
+const camDate=document.getElementById('cam-date'),fcNum=document.getElementById('fc-num');
+const countdownOverlay=document.getElementById('countdown-overlay'),countdownNum=document.getElementById('countdown-num');
+const shutterBtn=document.getElementById('shutter-btn');
+const galleryThumb=document.getElementById('gallery-thumb'),galleryIcon=document.getElementById('gallery-icon');
+const burstIndicator=document.getElementById('burst-indicator'),stripIndicator=document.getElementById('strip-indicator');
+
+let stream=null,facing='environment',dateOn=false,timerSecs=0,timerMenuOpen=false;
+let counting=false,timerInterval=null,shotCount=1,mode='single';
+let stripCaptures=[],currentStripTint='none',currentTint='none';
+let capturedSrc=null,savedRoll=[];
+const TOTAL=24;
+
+const tints={
+  none:{filter:'sepia(20%) contrast(1.06) brightness(0.96)',vignette:'radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,0.55) 100%)',tintColor:'transparent'},
+  warm:{filter:'sepia(45%) contrast(1.08) brightness(0.93) saturate(1.1)',vignette:'radial-gradient(ellipse at center,transparent 40%,rgba(30,10,0,0.65) 100%)',tintColor:'rgba(200,100,20,0.12)'},
+  cool:{filter:'sepia(10%) contrast(1.05) brightness(0.95) saturate(0.85) hue-rotate(190deg)',vignette:'radial-gradient(ellipse at center,transparent 42%,rgba(0,10,30,0.6) 100%)',tintColor:'rgba(30,80,160,0.1)'},
+  fade:{filter:'sepia(15%) contrast(0.88) brightness(1.08) saturate(0.7)',vignette:'radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,0.4) 100%)',tintColor:'rgba(240,230,210,0.18)'},
+  green:{filter:'sepia(20%) contrast(1.04) brightness(0.94) saturate(1.15) hue-rotate(10deg)',vignette:'radial-gradient(ellipse at center,transparent 40%,rgba(0,15,5,0.62) 100%)',tintColor:'rgba(20,80,30,0.1)'},
+};
+
+function getDateStr(){const n=new Date();return String(n.getMonth()+1).padStart(2,'0')+' / '+String(n.getDate()).padStart(2,'0')+' \''+String(n.getFullYear()).slice(2);}
+function updateCounter(){fcNum.textContent=String(shotCount).padStart(2,'0');fcNum.style.color=shotCount>=TOTAL?'#ff4444':'#ff9800';}
+function updateRollCount(){document.getElementById('roll-count').textContent=savedRoll.length;}
+
+function toggleDate(){dateOn=!dateOn;document.getElementById('date-toggle').classList.toggle('on',dateOn);camDate.textContent=getDateStr();camDate.classList.toggle('visible',dateOn);}
+function setTimer(s,btn){timerSecs=s;document.querySelectorAll('.t-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.getElementById('timer-label').textContent=s===0?'timer':s+'s';document.getElementById('timer-toggle').classList.toggle('on',s>0);}
+function toggleTimerMenu(){timerMenuOpen=!timerMenuOpen;document.getElementById('timer-opts').classList.toggle('visible',timerMenuOpen);}
+
+function toggleMode(m){
+  mode=mode===m?'single':m;
+  document.getElementById('burst-toggle').classList.toggle('on',mode==='burst');
+  document.getElementById('strip-toggle').classList.toggle('on',mode==='strip');
+  burstIndicator.classList.toggle('active',mode==='burst');
+  stripIndicator.classList.toggle('active',mode==='strip');
+  stripCaptures=[];updateStripUI();
+}
+function updateStripUI(){
+  document.querySelectorAll('.strip-frame').forEach((f,i)=>f.classList.toggle('lit',i<stripCaptures.length));
+  document.getElementById('strip-count-txt').textContent=stripCaptures.length+'/4';
+}
+
+function drawGrain(c,w,h){
+  c.width=w;c.height=h;const ctx=c.getContext('2d'),id=ctx.createImageData(w,h),d=id.data;
+  for(let i=0;i<d.length;i+=4){const v=Math.random()>0.5?0:255;d[i]=d[i+1]=d[i+2]=v;d[i+3]=Math.floor(Math.random()*65+10);}
+  ctx.putImageData(id,0,0);
+}
+
+async function startCamera(){
+  try{
+    if(stream)stream.getTracks().forEach(t=>t.stop());
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:facing},width:{ideal:1280},height:{ideal:1280}}});
+    video.srcObject=stream;video.style.display='block';noCam.style.display='none';
+  }catch(e){video.style.display='none';noCam.style.display='flex';noCam.onclick=startCamera;}
+}
+async function flipCamera(){facing=facing==='environment'?'user':'environment';await startCamera();}
+
+function flash(){flashRing.style.opacity='0.75';setTimeout(()=>{flashRing.style.opacity='0';},80);}
+
+function triggerShutter(){
+  if(counting){clearInterval(timerInterval);counting=false;countdownOverlay.classList.remove('active');shutterBtn.classList.remove('counting');return;}
+  if(timerSecs===0){executeShutter();return;}
+  let remaining=timerSecs;counting=true;shutterBtn.classList.add('counting');
+  countdownNum.textContent=remaining;countdownOverlay.classList.add('active');
+  timerInterval=setInterval(()=>{remaining--;if(remaining<=0){clearInterval(timerInterval);counting=false;countdownOverlay.classList.remove('active');shutterBtn.classList.remove('counting');executeShutter();}else countdownNum.textContent=remaining;},1000);
+}
+function executeShutter(){if(mode==='burst')doBurst();else if(mode==='strip')doStripSnap();else doSnap(src=>showPolaroid(src));}
+
+function captureFrame(){
+  const vw=video.videoWidth,vh=video.videoHeight;if(!vw||!vh)return null;
+  const size=Math.min(vw,vh);canvas.width=size;canvas.height=size;
+  const ctx=canvas.getContext('2d');
+  if(facing==='user'){ctx.translate(size,0);ctx.scale(-1,1);}
+  ctx.drawImage(video,(vw-size)/2,(vh-size)/2,size,size,0,0,size,size);
+  return canvas.toDataURL('image/jpeg',0.92);
+}
+function doSnap(cb){flash();setTimeout(()=>{const src=captureFrame();if(src){shotCount=Math.min(shotCount+1,99);updateCounter();cb(src);}},60);}
+
+function doBurst(){
+  const srcs=[];let i=0;flash();
+  const bd=[document.getElementById('bd0'),document.getElementById('bd1'),document.getElementById('bd2')];
+  function shoot(){bd[i]&&bd[i].classList.add('lit');setTimeout(()=>{const src=captureFrame();if(src){srcs.push(src);shotCount=Math.min(shotCount+1,99);updateCounter();}i++;if(i<3)setTimeout(()=>{flash();shoot();},220);else setTimeout(()=>{bd.forEach(d=>d.classList.remove('lit'));showPolaroid(srcs[1]||srcs[0]);},200);},60);}
+  shoot();
+}
+
+function doStripSnap(){
+  flash();setTimeout(()=>{
+    const src=captureFrame();if(!src)return;
+    stripCaptures.push(src);shotCount=Math.min(shotCount+1,99);updateCounter();updateStripUI();
+    if(stripCaptures.length>=4){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}showStrip();}
+  },60);
+}
+
+function useFile(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{galleryThumb.src=ev.target.result;galleryThumb.style.display='block';galleryIcon.style.display='none';showPolaroid(ev.target.result);};
+  reader.readAsDataURL(file);
+}
+
+function setTint(name,btn){currentTint=name;document.querySelectorAll('#polaroid-screen .tint-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');applyTint();}
+function applyTint(){const t=tints[currentTint];document.getElementById('polaroid-img').style.filter=t.filter;document.getElementById('vignette-overlay').style.background=t.vignette;document.getElementById('tint-overlay').style.background=t.tintColor;}
+function setStripTint(name,btn){currentStripTint=name;document.querySelectorAll('#strip-screen .tint-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');const t=tints[name];document.querySelectorAll('.strip-img').forEach(img=>img.style.filter=t.filter);document.querySelectorAll('.strip-vignette').forEach(v=>v.style.background=t.vignette);}
+
+function showPolaroid(src){
+  capturedSrc=src;const img=document.getElementById('polaroid-img');
+  img.src=src;img.onload=()=>{drawGrain(document.getElementById('grain-overlay'),img.offsetWidth||272,img.offsetHeight||272);applyTint();const ds=document.getElementById('date-stamp');if(dateOn){ds.textContent=getDateStr();ds.style.display='block';}else ds.style.display='none';};
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+  document.getElementById('camera-screen').style.display='none';
+  document.getElementById('polaroid-screen').style.display='flex';
+  setTimeout(()=>document.getElementById('note-input').focus(),400);
+}
+
+function showStrip(){
+  const wrap=document.getElementById('strip-wrap');wrap.innerHTML='';
+  stripCaptures.forEach((src,i)=>{
+    const cell=document.createElement('div');cell.className='strip-cell';
+    const pw=document.createElement('div');pw.className='strip-photo-wrap';
+    const img=document.createElement('img');img.className='strip-img';img.src=src;img.style.filter=tints[currentStripTint].filter;
+    const gc=document.createElement('canvas');gc.className='strip-grain';
+    const vo=document.createElement('div');vo.className='strip-vignette';vo.style.background=tints[currentStripTint].vignette;
+    img.onload=()=>drawGrain(gc,img.offsetWidth||170,img.offsetHeight||170);
+    pw.append(img,gc,vo);
+    if(dateOn){const ds=document.createElement('div');ds.style.cssText='position:absolute;bottom:10px;right:8px;font-family:"Share Tech Mono",monospace;font-size:9px;color:#ff9800;text-shadow:0 0 3px rgba(255,152,0,0.7);z-index:4;pointer-events:none;';ds.textContent=getDateStr();pw.appendChild(ds);}
+    const note=document.createElement('input');note.className='strip-note';note.type='text';note.placeholder='note...';note.maxLength=24;
+    cell.append(pw,note);wrap.appendChild(cell);
+  });
+  document.getElementById('camera-screen').style.display='none';
+  document.getElementById('strip-screen').style.display='flex';
+}
+
+async function retake(){
+  document.getElementById('polaroid-screen').style.display='none';
+  document.getElementById('strip-screen').style.display='none';
+  document.getElementById('camera-screen').style.display='flex';
+  document.getElementById('note-input').value='';
+  currentTint='none';currentStripTint='none';capturedSrc=null;stripCaptures=[];updateStripUI();
+  document.querySelectorAll('.tint-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
+  await startCamera();
+}
+
+function applyEffectsToCanvas(ctx,img,x,y,size,tintName,drawDate){
+  const t=tints[tintName];
+  ctx.filter=t.filter;ctx.drawImage(img,x,y,size,size);ctx.filter='none';
+  if(t.tintColor&&t.tintColor!=='transparent'){ctx.save();ctx.fillStyle=t.tintColor;ctx.fillRect(x,y,size,size);ctx.restore();}
+  const ig=document.createElement('canvas');ig.width=size;ig.height=size;drawGrain(ig,size,size);
+  ctx.save();ctx.globalAlpha=0.17;ctx.globalCompositeOperation='multiply';ctx.drawImage(ig,x,y);ctx.restore();
+  const vc=tintName==='warm'?'rgba(30,10,0,0.6)':tintName==='cool'?'rgba(0,10,30,0.55)':tintName==='green'?'rgba(0,15,5,0.58)':'rgba(0,0,0,0.5)';
+  const grd=ctx.createRadialGradient(x+size/2,y+size/2,size*0.3,x+size/2,y+size/2,size*0.72);
+  grd.addColorStop(0,'rgba(0,0,0,0)');grd.addColorStop(1,vc);
+  ctx.save();ctx.fillStyle=grd;ctx.fillRect(x,y,size,size);ctx.restore();
+  if(drawDate){ctx.save();ctx.font='500 20px "Share Tech Mono",monospace';ctx.fillStyle='#ff9800';ctx.shadowColor='rgba(255,152,0,0.8)';ctx.shadowBlur=5;ctx.textAlign='right';ctx.fillText(getDateStr(),x+size-10,y+size-10);ctx.restore();}
+}
+
+function buildFinalCanvas(src,note,tintName,cb){
+  const img=new Image();img.onload=()=>{
+    const size=900,border=26,bottom=90,W=size+border*2,H=size+border+bottom;
+    canvas.width=W;canvas.height=H;const ctx=canvas.getContext('2d');
+    ctx.fillStyle='#f5f0e8';ctx.fillRect(0,0,W,H);
+    const pg=document.createElement('canvas');pg.width=W;pg.height=H;drawGrain(pg,W,H);
+    ctx.save();ctx.globalAlpha=0.06;ctx.globalCompositeOperation='multiply';ctx.drawImage(pg,0,0);ctx.restore();
+    applyEffectsToCanvas(ctx,img,border,border,size,tintName,dateOn);
+    if(note){ctx.save();ctx.font='600 46px Caveat,cursive';ctx.fillStyle='#2e2318';ctx.textAlign='center';ctx.shadowColor='rgba(80,50,20,0.25)';ctx.shadowBlur=1;ctx.shadowOffsetX=0.8;ctx.shadowOffsetY=0.8;ctx.fillText(note,W/2,size+border+60);ctx.restore();}
+    cb(canvas.toDataURL('image/jpeg',0.93));
+  };img.src=src;
+}
+
+function savePhoto(){
+  const note=document.getElementById('note-input').value;
+  buildFinalCanvas(capturedSrc,note,currentTint,dataUrl=>{
+    savedRoll.push({src:dataUrl,note,date:getDateStr()});updateRollCount();
+    const link=document.createElement('a');link.download='polaroid-'+Date.now()+'.jpg';link.href=dataUrl;link.click();
+  });
+}
+
+async function sharePhoto(){
+  const note=document.getElementById('note-input').value;
+  buildFinalCanvas(capturedSrc,note,currentTint,async dataUrl=>{
+    try{
+      const blob=await(await fetch(dataUrl)).blob();
+      const file=new File([blob],'polaroid.jpg',{type:'image/jpeg'});
+      if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'instant'});}
+      else{const link=document.createElement('a');link.download='polaroid-'+Date.now()+'.jpg';link.href=dataUrl;link.click();}
+    }catch(e){}
+  });
+}
+
+function saveStrip(){
+  const notes=[...document.querySelectorAll('.strip-note')].map(n=>n.value);
+  const N=stripCaptures.length,fw=500,ph=460,pb=70,pw2=fw-40,b=8;
+  const W=fw,H=N*(ph+pb+b*2)+40;
+  canvas.width=W;canvas.height=H;const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#ebe5d5';ctx.fillRect(0,0,W,H);
+  const pg=document.createElement('canvas');pg.width=W;pg.height=H;drawGrain(pg,W,H);
+  ctx.save();ctx.globalAlpha=0.06;ctx.globalCompositeOperation='multiply';ctx.drawImage(pg,0,0);ctx.restore();
+  let loaded=0;
+  stripCaptures.forEach((src,i)=>{
+    const img=new Image();img.onload=()=>{
+      const ox=(W-pw2)/2,oy=20+i*(ph+pb+b*2)+b;
+      ctx.fillStyle='#f5f0e8';ctx.fillRect(ox-b,oy-b,pw2+b*2,ph+pb+b*2);
+      applyEffectsToCanvas(ctx,img,ox,oy,pw2,currentStripTint,dateOn&&i===N-1);
+      if(notes[i]){ctx.save();ctx.font='600 36px Caveat,cursive';ctx.fillStyle='#2e2318';ctx.textAlign='center';ctx.shadowColor='rgba(80,50,20,0.2)';ctx.shadowBlur=1;ctx.fillText(notes[i],W/2,oy+ph+pb-8);ctx.restore();}
+      loaded++;
+      if(loaded===N){
+        const dataUrl=canvas.toDataURL('image/jpeg',0.93);
+        savedRoll.push({src:dataUrl,note:'strip',date:getDateStr()});updateRollCount();
+        const link=document.createElement('a');link.download='strip-'+Date.now()+'.jpg';link.href=dataUrl;link.click();
+      }
+    };img.src=src;
+  });
+}
+
+function openGallery(){
+  const grid=document.getElementById('gallery-grid'),empty=document.getElementById('gallery-empty');
+  grid.innerHTML='';
+  if(savedRoll.length===0){grid.style.display='none';empty.style.display='flex';}
+  else{
+    grid.style.display='grid';empty.style.display='none';
+    savedRoll.forEach((item,i)=>{
+      const div=document.createElement('div');div.className='gallery-item';
+      const img=document.createElement('img');img.src=item.src;
+      const lbl=document.createElement('div');lbl.className='g-label';lbl.textContent=item.note||item.date;
+      div.append(img,lbl);div.onclick=()=>{const link=document.createElement('a');link.download='polaroid-'+i+'.jpg';link.href=item.src;link.click();};
+      grid.appendChild(div);
+    });
+  }
+  document.getElementById('gallery-overlay').classList.add('open');
+}
+function closeGallery(){document.getElementById('gallery-overlay').classList.remove('open');}
+
+updateCounter();startCamera();
+</script>
+</body>
+</html>
