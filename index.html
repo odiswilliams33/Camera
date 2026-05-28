@@ -10,8 +10,8 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&family=Share+Tech+Mono&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;background:#1a1a18;overflow-x:hidden;}
-#app{max-width:430px;margin:0 auto;background:#1a1a18;display:flex;flex-direction:column;align-items:center;padding:20px 16px 40px;gap:16px;min-height:100vh;}
+html,body{height:100%;background:#1a1a18;overflow-x:hidden;transition:background 0.2s;}
+#app{max-width:430px;margin:0 auto;background:#1a1a18;display:flex;flex-direction:column;align-items:center;padding:20px 16px 40px;gap:16px;min-height:100vh;transition:background 0.2s;}
 h1{font-family:'Caveat',cursive;font-size:28px;color:#f0ebe0;letter-spacing:1px;text-align:center;font-weight:600;}
 
 #camera-screen{width:100%;display:flex;flex-direction:column;align-items:center;gap:14px;}
@@ -78,7 +78,7 @@ h1{font-family:'Caveat',cursive;font-size:28px;color:#f0ebe0;letter-spacing:1px;
 
 /* POLAROID */
 #polaroid-screen{width:100%;display:none;flex-direction:column;align-items:center;gap:14px;}
-#polaroid{width:300px;background:#f5f0e8;padding:14px 14px 72px;box-shadow:0 8px 36px rgba(0,0,0,0.65);position:relative;transform:rotate(-1.5deg);isolation:isolate;}
+#polaroid{width:300px;background:#f5f0e8;padding:14px 14px 72px;box-shadow:0 8px 36px rgba(0,0,0,0.65);position:relative;transform:none;transition:transform 0.18s,box-shadow 0.18s;isolation:isolate;}
 #polaroid::before{content:'';position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.07'/%3E%3C/svg%3E");background-size:300px 300px;pointer-events:none;z-index:2;}
 #photo-wrap{position:relative;width:100%;aspect-ratio:1;overflow:hidden;}
 #polaroid-img{width:100%;height:100%;object-fit:cover;display:block;}
@@ -115,18 +115,22 @@ h1{font-family:'Caveat',cursive;font-size:28px;color:#f0ebe0;letter-spacing:1px;
 .action-btn.gold{border-color:rgba(201,148,58,0.4);color:#c9943a;background:rgba(201,148,58,0.07);}
 
 /* EXPORT OPTIONS */
-.export-section{width:300px;display:flex;flex-direction:column;gap:8px;}
+.export-section{width:300px;background:#252523;border-radius:10px;border:1px solid #333;padding:12px;display:flex;flex-direction:column;gap:10px;}
+.export-section-title{font-size:10px;color:#555;text-transform:lowercase;letter-spacing:0.5px;}
 .export-row{display:flex;align-items:center;gap:8px;}
-.export-label{font-size:10px;color:#666;white-space:nowrap;width:46px;}
-.skew-toggle{flex:1;padding:8px;border-radius:7px;border:1px solid #333;background:#252523;color:#888;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:all 0.15s;}
-.skew-toggle.on{border-color:#c9943a;color:#c9943a;background:rgba(201,148,58,0.08);}
-.skew-toggle i{font-size:14px;}
-#bg-picker{display:none;flex-wrap:wrap;gap:6px;align-items:center;}
-#bg-picker.visible{display:flex;}
-.bg-swatch{width:28px;height:28px;border-radius:6px;border:2px solid transparent;cursor:pointer;transition:border-color 0.15s;flex-shrink:0;}
+.export-row-label{font-size:11px;color:#666;width:40px;flex-shrink:0;}
+.skew-toggle{flex:1;padding:9px 10px;border-radius:7px;border:1px solid #444;background:#1e1e1c;color:#888;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.15s;-webkit-tap-highlight-color:transparent;}
+.skew-toggle.on{border-color:#c9943a;color:#c9943a;background:rgba(201,148,58,0.1);}
+.skew-toggle i{font-size:15px;}
+#bg-row{display:flex;align-items:center;gap:8px;opacity:1;pointer-events:auto;transition:opacity 0.2s;}
+#bg-row.active{opacity:1;pointer-events:auto;}
+#bg-swatches{display:flex;flex-wrap:wrap;gap:6px;align-items:center;flex:1;}
+.bg-swatch{width:30px;height:30px;border-radius:7px;border:2px solid transparent;cursor:pointer;transition:border-color 0.15s;flex-shrink:0;-webkit-tap-highlight-color:transparent;}
 .bg-swatch.active{border-color:#c9943a;}
-#bg-upload-btn{width:28px;height:28px;border-radius:6px;border:1px dashed #555;background:transparent;color:#777;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-#bg-upload-btn i{font-size:14px;}
+#bg-upload-btn{width:30px;height:30px;border-radius:7px;border:1px dashed #555;background:transparent;color:#777;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;-webkit-tap-highlight-color:transparent;}
+.bg-swatch.transparent{background-color:#eee!important;background-image:linear-gradient(45deg,#bbb 25%,transparent 25%),linear-gradient(-45deg,#bbb 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#bbb 75%),linear-gradient(-45deg,transparent 75%,#bbb 75%)!important;background-size:12px 12px!important;background-position:0 0,0 6px,6px -6px,-6px 0!important;}
+#export-format{font-family:'Share Tech Mono',monospace;color:#c9943a;font-size:12px;margin-left:auto;}
+#bg-upload-btn i{font-size:15px;}
 #bg-file-input{display:none;}
 
 /* GALLERY */
@@ -141,7 +145,8 @@ h1{font-family:'Caveat',cursive;font-size:28px;color:#f0ebe0;letter-spacing:1px;
 .gallery-item .g-label{position:absolute;bottom:0;left:0;right:0;padding:5px 8px;background:rgba(0,0,0,0.65);font-family:'Caveat',cursive;font-size:14px;color:#f0ebe0;text-align:center;}
 #gallery-empty{flex:1;display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:#555;font-size:14px;}
 #gallery-empty i{font-size:44px;color:#2a2a28;}
-canvas{display:none;}
+#canvas{display:none;}
+#grain-overlay,.strip-grain{display:block;}
 </style>
 </head>
 <body>
@@ -205,23 +210,28 @@ canvas{display:none;}
       <button class="tint-btn" onclick="setTint('green',this)">🌿 fuji</button>
     </div>
     <div class="export-section">
+      <span class="export-section-title">export options</span>
       <div class="export-row">
-        <span class="export-label">export</span>
-        <button class="skew-toggle" id="skew-toggle" onclick="toggleSkew()"><i class="ti ti-perspective"></i> skewed</button>
+        <span class="export-row-label">tilt</span>
+        <button class="skew-toggle" id="skew-toggle" onclick="toggleSkew()">
+          <i class="ti ti-perspective"></i> tilt polaroid
+        </button>
       </div>
-      <div class="export-row">
-        <span class="export-label">bg</span>
-        <div id="bg-picker">
-          <div class="bg-swatch active" id="bg-dark"    style="background:#1a1a18" onclick="setBg('dark',this)"    title="dark"></div>
-          <div class="bg-swatch"        id="bg-cream"   style="background:#f0ead8" onclick="setBg('cream',this)"   title="cream"></div>
-          <div class="bg-swatch"        id="bg-slate"   style="background:#2d3a4a" onclick="setBg('slate',this)"   title="slate"></div>
-          <div class="bg-swatch"        id="bg-blush"   style="background:#c9a89a" onclick="setBg('blush',this)"   title="blush"></div>
-          <div class="bg-swatch"        id="bg-wood"    style="background:#8b6343" onclick="setBg('wood',this)"    title="wood"></div>
-          <div class="bg-swatch"        id="bg-cork"    style="background:#c4a46b" onclick="setBg('cork',this)"    title="cork"></div>
-          <label id="bg-upload-btn" for="bg-file-input" title="upload your own"><i class="ti ti-upload"></i></label>
+      <div class="export-row" id="bg-row">
+        <span class="export-row-label">bg</span>
+        <div id="bg-swatches">
+          <div class="bg-swatch active" style="background:#1a1a18" onclick="setBg('dark',this)"  title="dark"></div>
+          <div class="bg-swatch" style="background:#f0ead8" onclick="setBg('cream',this)" title="cream"></div>
+          <div class="bg-swatch" style="background:#2d3a4a" onclick="setBg('slate',this)" title="slate"></div>
+          <div class="bg-swatch" style="background:#c9a89a" onclick="setBg('blush',this)" title="blush"></div>
+          <div class="bg-swatch" style="background:#8b6343" onclick="setBg('wood',this)"  title="wood"></div>
+          <div class="bg-swatch" style="background:#c4a46b" onclick="setBg('cork',this)"  title="cork"></div>
+          <div class="bg-swatch transparent" onclick="setBg('transparent',this)" title="transparent PNG"></div>
+          <label id="bg-upload-btn" for="bg-file-input" title="upload your own bg"><i class="ti ti-photo-up"></i></label>
           <input type="file" id="bg-file-input" accept="image/*" onchange="loadCustomBg(event)">
         </div>
       </div>
+      <div class="export-row"><span class="export-row-label">file</span><span id="export-format">JPG</span></div>
     </div>
     <div class="edit-row wide">
       <button class="action-btn" onclick="retake()"><i class="ti ti-arrow-left"></i> retake</button>
@@ -309,11 +319,32 @@ function drawGrain(c,w,h){
 }
 
 async function startCamera(){
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    video.style.display='none';
+    noCam.style.display='flex';
+    noCam.querySelector('span').textContent='camera needs Safari/Chrome with HTTPS or localhost';
+    noCam.onclick=null;
+    return;
+  }
   try{
     if(stream)stream.getTracks().forEach(t=>t.stop());
-    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:facing},width:{ideal:1280},height:{ideal:1280}}});
-    video.srcObject=stream;video.style.display='block';noCam.style.display='none';
-  }catch(e){video.style.display='none';noCam.style.display='flex';noCam.onclick=startCamera;}
+    stream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:{ideal:facing},width:{ideal:1280},height:{ideal:1280}},
+      audio:false
+    });
+    video.srcObject=stream;
+    video.setAttribute('playsinline','');
+    video.setAttribute('muted','');
+    video.muted=true;
+    try{await video.play();}catch(pe){console.log('play error',pe);}
+    video.style.display='block';
+    noCam.style.display='none';
+  }catch(e){
+    console.log('camera error',e);
+    video.style.display='none';
+    noCam.style.display='flex';
+    noCam.onclick=startCamera;
+  }
 }
 async function flipCamera(){facing=facing==='environment'?'user':'environment';await startCamera();}
 
@@ -329,7 +360,8 @@ function triggerShutter(){
 function executeShutter(){if(mode==='burst')doBurst();else if(mode==='strip')doStripSnap();else doSnap(src=>showPolaroid(src));}
 
 function captureFrame(){
-  const vw=video.videoWidth,vh=video.videoHeight;if(!vw||!vh)return null;
+  const vw=video.videoWidth,vh=video.videoHeight;
+  if(!vw||!vh||video.readyState<2)return null;
   const size=Math.min(vw,vh);canvas.width=size;canvas.height=size;
   const ctx=canvas.getContext('2d');
   if(facing==='user'){ctx.translate(size,0);ctx.scale(-1,1);}
@@ -358,6 +390,7 @@ function useFile(e){
   const reader=new FileReader();
   reader.onload=ev=>{galleryThumb.src=ev.target.result;galleryThumb.style.display='block';galleryIcon.style.display='none';showPolaroid(ev.target.result);};
   reader.readAsDataURL(file);
+  e.target.value='';
 }
 
 function setTint(name,btn){currentTint=name;document.querySelectorAll('#polaroid-screen .tint-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');applyTint();}
@@ -369,6 +402,7 @@ function showPolaroid(src){
   img.src=src;img.onload=()=>{drawGrain(document.getElementById('grain-overlay'),img.offsetWidth||272,img.offsetHeight||272);applyTint();const ds=document.getElementById('date-stamp');if(dateOn){ds.textContent=getDateStr();ds.style.display='block';}else ds.style.display='none';};
   document.getElementById('camera-screen').style.display='none';
   document.getElementById('polaroid-screen').style.display='flex';
+  applyLiveEditPreview();
   setTimeout(()=>document.getElementById('note-input').focus(),400);
 }
 
@@ -394,9 +428,11 @@ async function retake(){
   document.getElementById('polaroid-screen').style.display='none';
   document.getElementById('strip-screen').style.display='none';
   document.getElementById('camera-screen').style.display='flex';
+  resetLiveBg();
   document.getElementById('note-input').value='';
   currentTint='none';currentStripTint='none';capturedSrc=null;stripCaptures=[];updateStripUI();
-  document.querySelectorAll('.tint-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
+  document.querySelectorAll('#polaroid-screen .tint-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
+  document.querySelectorAll('#strip-screen .tint-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
   if(!stream)await startCamera();
 }
 
@@ -413,16 +449,56 @@ function applyEffectsToCanvas(ctx,img,x,y,size,tintName,drawDate){
   if(drawDate){ctx.save();ctx.font='500 20px "Share Tech Mono",monospace';ctx.fillStyle='#ff9800';ctx.shadowColor='rgba(255,152,0,0.8)';ctx.shadowBlur=5;ctx.textAlign='right';ctx.fillText(getDateStr(),x+size-10,y+size-10);ctx.restore();}
 }
 
+function getLiveBgStyle(){
+  if(selectedBg==='transparent'){
+    return {backgroundColor:'#d8d8d8',backgroundImage:'linear-gradient(45deg,#aaa 25%,transparent 25%),linear-gradient(-45deg,#aaa 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#aaa 75%),linear-gradient(-45deg,transparent 75%,#aaa 75%)',backgroundSize:'28px 28px',backgroundPosition:'0 0,0 14px,14px -14px,-14px 0'};
+  }
+  if(selectedBg==='custom'&&customBgSrc){
+    return {backgroundColor:'#1a1a18',backgroundImage:`url(${customBgSrc})`,backgroundSize:'cover',backgroundPosition:'center'};
+  }
+  if(selectedBg==='wood'){
+    return {backgroundColor:'#7a5230',backgroundImage:'linear-gradient(0deg,rgba(60,30,10,.18) 1px,transparent 6px),linear-gradient(90deg,rgba(255,255,255,.04),rgba(0,0,0,.12))',backgroundSize:'100% 18px,100% 100%',backgroundPosition:'center'};
+  }
+  if(selectedBg==='cork'){
+    return {backgroundColor:'#c4a46b',backgroundImage:'radial-gradient(circle at 20% 30%,rgba(100,70,30,.22) 0 3px,transparent 4px),radial-gradient(circle at 70% 60%,rgba(255,235,170,.22) 0 2px,transparent 4px)',backgroundSize:'36px 36px,28px 28px',backgroundPosition:'center'};
+  }
+  return {backgroundColor:bgColors[selectedBg]||'#1a1a18',backgroundImage:'none',backgroundSize:'auto',backgroundPosition:'center'};
+}
+
+function applyLiveEditPreview(){
+  const live=getLiveBgStyle();
+  const app=document.getElementById('app');
+  Object.assign(document.body.style,live);
+  Object.assign(app.style,live);
+  const fmt=document.getElementById('export-format');if(fmt)fmt.textContent=selectedBg==='transparent'?'PNG':'JPG';
+  const polaroid=document.getElementById('polaroid');
+  if(polaroid){
+    polaroid.style.transform=skewEnabled?'rotate(-1.5deg)':'none';
+    polaroid.style.boxShadow=skewEnabled?'0 12px 44px rgba(0,0,0,0.72)':'0 8px 36px rgba(0,0,0,0.65)';
+  }
+}
+
+function resetLiveBg(){
+  const dark={backgroundColor:'#1a1a18',backgroundImage:'none',backgroundSize:'auto',backgroundPosition:'center'};
+  Object.assign(document.body.style,dark);
+  Object.assign(document.getElementById('app').style,dark);
+  const fmt=document.getElementById('export-format');if(fmt)fmt.textContent=selectedBg==='transparent'?'PNG':'JPG';
+}
+
 function toggleSkew(){
   skewEnabled=!skewEnabled;
   document.getElementById('skew-toggle').classList.toggle('on',skewEnabled);
-  document.getElementById('bg-picker').classList.toggle('visible',skewEnabled);
+  document.getElementById('bg-row').classList.add('active');
+  applyLiveEditPreview();
 }
 
 function setBg(name,el){
   selectedBg=name;customBgSrc=null;
   document.querySelectorAll('.bg-swatch').forEach(s=>s.classList.remove('active'));
   el.classList.add('active');
+  document.getElementById('bg-upload-btn').style.borderColor='';
+  document.getElementById('bg-upload-btn').style.color='';
+  applyLiveEditPreview();
 }
 
 function loadCustomBg(e){
@@ -433,11 +509,13 @@ function loadCustomBg(e){
     document.querySelectorAll('.bg-swatch').forEach(s=>s.classList.remove('active'));
     const btn=document.getElementById('bg-upload-btn');
     btn.style.borderColor='#c9943a';btn.style.color='#c9943a';
+    applyLiveEditPreview();
   };
   reader.readAsDataURL(file);
+  e.target.value='';
 }
 
-const bgColors={dark:'#1a1a18',cream:'#f0ead8',slate:'#2d3a4a',blush:'#c9a89a',wood:null,cork:null};
+const bgColors={dark:'#1a1a18',cream:'#f0ead8',slate:'#2d3a4a',blush:'#c9a89a',wood:null,cork:null,transparent:null};
 
 function drawWoodBg(ctx,W,H){
   ctx.fillStyle='#7a5230';ctx.fillRect(0,0,W,H);
@@ -461,6 +539,10 @@ function drawCorkBg(ctx,W,H){
 }
 
 function paintBg(ctx,W,H){
+  if(selectedBg==='transparent'){
+    ctx.clearRect(0,0,W,H);
+    return Promise.resolve();
+  }
   if(selectedBg==='custom'&&customBgSrc){
     return new Promise(res=>{
       const img=new Image();img.onload=()=>{ctx.drawImage(img,0,0,W,H);res();};img.src=customBgSrc;
@@ -473,6 +555,8 @@ function paintBg(ctx,W,H){
 }
 
 
+function buildFinalCanvas(src,note,tintName,cb){
+  if(!src){alert('No photo to save yet. Take or upload a photo first.');return;}
   const img=new Image();img.onload=async()=>{
     const size=2400,border=60,bottom=520;
     const pW=size+border*2,pH=size+border+bottom;
@@ -499,26 +583,29 @@ function paintBg(ctx,W,H){
       ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
       ctx.drawImage(flat,0,0);
     }
-    cb(canvas.toDataURL('image/jpeg',0.97));
-  };img.src=src;
+    const isPng=selectedBg==='transparent';
+    cb(canvas.toDataURL(isPng?'image/png':'image/jpeg',isPng?undefined:0.97), isPng?'png':'jpg', isPng?'image/png':'image/jpeg');
+  };
+  img.onerror=()=>alert('Could not load this photo for export. Please retake it.');
+  img.src=src;
 }
 
 function savePhoto(){
   const note=document.getElementById('note-input').value;
-  buildFinalCanvas(capturedSrc,note,currentTint,dataUrl=>{
+  buildFinalCanvas(capturedSrc,note,currentTint,(dataUrl,ext)=>{
     savedRoll.push({src:dataUrl,note,date:getDateStr()});updateRollCount();
-    const link=document.createElement('a');link.download='polaroid-'+Date.now()+'.jpg';link.href=dataUrl;link.click();
+    const link=document.createElement('a');link.download='polaroid-'+Date.now()+'.'+ext;link.href=dataUrl;link.click();
   });
 }
 
 async function sharePhoto(){
   const note=document.getElementById('note-input').value;
-  buildFinalCanvas(capturedSrc,note,currentTint,async dataUrl=>{
+  buildFinalCanvas(capturedSrc,note,currentTint,async (dataUrl,ext,mime)=>{
     try{
       const blob=await(await fetch(dataUrl)).blob();
-      const file=new File([blob],'polaroid.jpg',{type:'image/jpeg'});
+      const file=new File([blob],'polaroid.'+ext,{type:mime});
       if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'instant'});}
-      else{const link=document.createElement('a');link.download='polaroid-'+Date.now()+'.jpg';link.href=dataUrl;link.click();}
+      else{const link=document.createElement('a');link.download='polaroid-'+Date.now()+'.'+ext;link.href=dataUrl;link.click();}
     }catch(e){}
   });
 }
