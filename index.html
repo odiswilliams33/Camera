@@ -78,7 +78,7 @@ h1{font-family:'Caveat',cursive;font-size:28px;color:#f0ebe0;letter-spacing:1px;
 
 /* POLAROID */
 #polaroid-screen{width:100%;display:none;flex-direction:column;align-items:center;gap:14px;}
-#polaroid{width:300px;background:#f5f0e8;padding:14px 14px 56px;box-shadow:0 8px 36px rgba(0,0,0,0.65);position:relative;transform:rotate(-1.5deg);isolation:isolate;}
+#polaroid{width:300px;background:#f5f0e8;padding:14px 14px 72px;box-shadow:0 8px 36px rgba(0,0,0,0.65);position:relative;transform:rotate(-1.5deg);isolation:isolate;}
 #polaroid::before{content:'';position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.07'/%3E%3C/svg%3E");background-size:300px 300px;pointer-events:none;z-index:2;}
 #photo-wrap{position:relative;width:100%;aspect-ratio:1;overflow:hidden;}
 #polaroid-img{width:100%;height:100%;object-fit:cover;display:block;}
@@ -86,7 +86,7 @@ h1{font-family:'Caveat',cursive;font-size:28px;color:#f0ebe0;letter-spacing:1px;
 #vignette-overlay{position:absolute;inset:0;pointer-events:none;z-index:2;}
 #tint-overlay{position:absolute;inset:0;pointer-events:none;z-index:3;}
 #date-stamp{position:absolute;bottom:10px;right:10px;font-family:'Share Tech Mono',monospace;font-size:11px;color:#ff9800;text-shadow:0 0 4px rgba(255,152,0,0.7);z-index:4;display:none;}
-#note-input{position:absolute;bottom:8px;left:10px;right:10px;height:40px;background:transparent;border:none;outline:none;font-family:'Caveat',cursive;font-size:22px;font-weight:600;color:#2e2318;text-align:center;width:calc(100% - 20px);z-index:3;text-shadow:0.5px 0.5px 0 rgba(0,0,0,0.15);}
+#note-input{position:absolute;bottom:18px;left:10px;right:10px;height:40px;background:transparent;border:none;outline:none;font-family:'Caveat',cursive;font-size:22px;font-weight:600;color:#2e2318;text-align:center;width:calc(100% - 20px);z-index:3;text-shadow:0.5px 0.5px 0 rgba(0,0,0,0.15);}
 #note-input::placeholder{color:#b0a898;}
 
 /* STRIP */
@@ -332,7 +332,6 @@ function setStripTint(name,btn){currentStripTint=name;document.querySelectorAll(
 function showPolaroid(src){
   capturedSrc=src;const img=document.getElementById('polaroid-img');
   img.src=src;img.onload=()=>{drawGrain(document.getElementById('grain-overlay'),img.offsetWidth||272,img.offsetHeight||272);applyTint();const ds=document.getElementById('date-stamp');if(dateOn){ds.textContent=getDateStr();ds.style.display='block';}else ds.style.display='none';};
-  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
   document.getElementById('camera-screen').style.display='none';
   document.getElementById('polaroid-screen').style.display='flex';
   setTimeout(()=>document.getElementById('note-input').focus(),400);
@@ -363,7 +362,7 @@ async function retake(){
   document.getElementById('note-input').value='';
   currentTint='none';currentStripTint='none';capturedSrc=null;stripCaptures=[];updateStripUI();
   document.querySelectorAll('.tint-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
-  await startCamera();
+  if(!stream)await startCamera();
 }
 
 function applyEffectsToCanvas(ctx,img,x,y,size,tintName,drawDate){
@@ -381,13 +380,22 @@ function applyEffectsToCanvas(ctx,img,x,y,size,tintName,drawDate){
 
 function buildFinalCanvas(src,note,tintName,cb){
   const img=new Image();img.onload=()=>{
-    const size=900,border=26,bottom=90,W=size+border*2,H=size+border+bottom;
-    canvas.width=W;canvas.height=H;const ctx=canvas.getContext('2d');
-    ctx.fillStyle='#f5f0e8';ctx.fillRect(0,0,W,H);
-    const pg=document.createElement('canvas');pg.width=W;pg.height=H;drawGrain(pg,W,H);
-    ctx.save();ctx.globalAlpha=0.06;ctx.globalCompositeOperation='multiply';ctx.drawImage(pg,0,0);ctx.restore();
-    applyEffectsToCanvas(ctx,img,border,border,size,tintName,dateOn);
-    if(note){ctx.save();ctx.font='600 46px Caveat,cursive';ctx.fillStyle='#2e2318';ctx.textAlign='center';ctx.shadowColor='rgba(80,50,20,0.25)';ctx.shadowBlur=1;ctx.shadowOffsetX=0.8;ctx.shadowOffsetY=0.8;ctx.fillText(note,W/2,size+border+60);ctx.restore();}
+    const size=900,border=26,bottom=200;
+    const pW=size+border*2,pH=size+border+bottom;
+    const pad=80;
+    const rad=-1.5*Math.PI/180;
+    const W=pW+pad*2,H=pH+pad*2;
+    const flat=document.createElement('canvas');flat.width=pW;flat.height=pH;
+    const fc=flat.getContext('2d');
+    fc.fillStyle='#f5f0e8';fc.fillRect(0,0,pW,pH);
+    const pg=document.createElement('canvas');pg.width=pW;pg.height=pH;drawGrain(pg,pW,pH);
+    fc.save();fc.globalAlpha=0.06;fc.globalCompositeOperation='multiply';fc.drawImage(pg,0,0);fc.restore();
+    applyEffectsToCanvas(fc,img,border,border,size,tintName,dateOn);
+    if(note){fc.save();fc.font='600 46px Caveat,cursive';fc.fillStyle='#2e2318';fc.textAlign='center';fc.shadowColor='rgba(80,50,20,0.25)';fc.shadowBlur=1;fc.shadowOffsetX=0.8;fc.shadowOffsetY=0.8;fc.fillText(note,pW/2,size+border+110);fc.restore();}
+    canvas.width=W;canvas.height=H;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='#1a1a18';ctx.fillRect(0,0,W,H);
+    ctx.save();ctx.translate(W/2,H/2);ctx.rotate(rad);ctx.drawImage(flat,-pW/2,-pH/2);ctx.restore();
     cb(canvas.toDataURL('image/jpeg',0.93));
   };img.src=src;
 }
