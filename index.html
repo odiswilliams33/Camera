@@ -114,6 +114,21 @@ h1{font-family:'Caveat',cursive;font-size:28px;color:#f0ebe0;letter-spacing:1px;
 .action-btn i{font-size:16px;}
 .action-btn.gold{border-color:rgba(201,148,58,0.4);color:#c9943a;background:rgba(201,148,58,0.07);}
 
+/* EXPORT OPTIONS */
+.export-section{width:300px;display:flex;flex-direction:column;gap:8px;}
+.export-row{display:flex;align-items:center;gap:8px;}
+.export-label{font-size:10px;color:#666;white-space:nowrap;width:46px;}
+.skew-toggle{flex:1;padding:8px;border-radius:7px;border:1px solid #333;background:#252523;color:#888;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:all 0.15s;}
+.skew-toggle.on{border-color:#c9943a;color:#c9943a;background:rgba(201,148,58,0.08);}
+.skew-toggle i{font-size:14px;}
+#bg-picker{display:none;flex-wrap:wrap;gap:6px;align-items:center;}
+#bg-picker.visible{display:flex;}
+.bg-swatch{width:28px;height:28px;border-radius:6px;border:2px solid transparent;cursor:pointer;transition:border-color 0.15s;flex-shrink:0;}
+.bg-swatch.active{border-color:#c9943a;}
+#bg-upload-btn{width:28px;height:28px;border-radius:6px;border:1px dashed #555;background:transparent;color:#777;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+#bg-upload-btn i{font-size:14px;}
+#bg-file-input{display:none;}
+
 /* GALLERY */
 #gallery-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:100;display:none;flex-direction:column;}
 #gallery-overlay.open{display:flex;}
@@ -189,6 +204,25 @@ canvas{display:none;}
       <button class="tint-btn" onclick="setTint('fade',this)">🌫 fade</button>
       <button class="tint-btn" onclick="setTint('green',this)">🌿 fuji</button>
     </div>
+    <div class="export-section">
+      <div class="export-row">
+        <span class="export-label">export</span>
+        <button class="skew-toggle" id="skew-toggle" onclick="toggleSkew()"><i class="ti ti-perspective"></i> skewed</button>
+      </div>
+      <div class="export-row">
+        <span class="export-label">bg</span>
+        <div id="bg-picker">
+          <div class="bg-swatch active" id="bg-dark"    style="background:#1a1a18" onclick="setBg('dark',this)"    title="dark"></div>
+          <div class="bg-swatch"        id="bg-cream"   style="background:#f0ead8" onclick="setBg('cream',this)"   title="cream"></div>
+          <div class="bg-swatch"        id="bg-slate"   style="background:#2d3a4a" onclick="setBg('slate',this)"   title="slate"></div>
+          <div class="bg-swatch"        id="bg-blush"   style="background:#c9a89a" onclick="setBg('blush',this)"   title="blush"></div>
+          <div class="bg-swatch"        id="bg-wood"    style="background:#8b6343" onclick="setBg('wood',this)"    title="wood"></div>
+          <div class="bg-swatch"        id="bg-cork"    style="background:#c4a46b" onclick="setBg('cork',this)"    title="cork"></div>
+          <label id="bg-upload-btn" for="bg-file-input" title="upload your own"><i class="ti ti-upload"></i></label>
+          <input type="file" id="bg-file-input" accept="image/*" onchange="loadCustomBg(event)">
+        </div>
+      </div>
+    </div>
     <div class="edit-row wide">
       <button class="action-btn" onclick="retake()"><i class="ti ti-arrow-left"></i> retake</button>
       <button class="action-btn" onclick="sharePhoto()"><i class="ti ti-share"></i> share</button>
@@ -236,6 +270,7 @@ let stream=null,facing='environment',dateOn=false,timerSecs=0,timerMenuOpen=fals
 let counting=false,timerInterval=null,shotCount=1,mode='single';
 let stripCaptures=[],currentStripTint='none',currentTint='none';
 let capturedSrc=null,savedRoll=[];
+let skewEnabled=false,selectedBg='dark',customBgSrc=null;
 const TOTAL=24;
 
 const tints={
@@ -299,7 +334,7 @@ function captureFrame(){
   const ctx=canvas.getContext('2d');
   if(facing==='user'){ctx.translate(size,0);ctx.scale(-1,1);}
   ctx.drawImage(video,(vw-size)/2,(vh-size)/2,size,size,0,0,size,size);
-  return canvas.toDataURL('image/jpeg',0.92);
+  return canvas.toDataURL('image/jpeg',0.97);
 }
 function doSnap(cb){flash();setTimeout(()=>{const src=captureFrame();if(src){shotCount=Math.min(shotCount+1,99);updateCounter();cb(src);}},60);}
 
@@ -378,25 +413,93 @@ function applyEffectsToCanvas(ctx,img,x,y,size,tintName,drawDate){
   if(drawDate){ctx.save();ctx.font='500 20px "Share Tech Mono",monospace';ctx.fillStyle='#ff9800';ctx.shadowColor='rgba(255,152,0,0.8)';ctx.shadowBlur=5;ctx.textAlign='right';ctx.fillText(getDateStr(),x+size-10,y+size-10);ctx.restore();}
 }
 
-function buildFinalCanvas(src,note,tintName,cb){
-  const img=new Image();img.onload=()=>{
-    const size=900,border=26,bottom=200;
+function toggleSkew(){
+  skewEnabled=!skewEnabled;
+  document.getElementById('skew-toggle').classList.toggle('on',skewEnabled);
+  document.getElementById('bg-picker').classList.toggle('visible',skewEnabled);
+}
+
+function setBg(name,el){
+  selectedBg=name;customBgSrc=null;
+  document.querySelectorAll('.bg-swatch').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function loadCustomBg(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    customBgSrc=ev.target.result;selectedBg='custom';
+    document.querySelectorAll('.bg-swatch').forEach(s=>s.classList.remove('active'));
+    const btn=document.getElementById('bg-upload-btn');
+    btn.style.borderColor='#c9943a';btn.style.color='#c9943a';
+  };
+  reader.readAsDataURL(file);
+}
+
+const bgColors={dark:'#1a1a18',cream:'#f0ead8',slate:'#2d3a4a',blush:'#c9a89a',wood:null,cork:null};
+
+function drawWoodBg(ctx,W,H){
+  ctx.fillStyle='#7a5230';ctx.fillRect(0,0,W,H);
+  for(let i=0;i<80;i++){
+    const y=Math.random()*H,thickness=Math.random()*3+0.5;
+    ctx.beginPath();ctx.moveTo(0,y);
+    ctx.bezierCurveTo(W*0.3,y+Math.random()*8-4,W*0.7,y+Math.random()*8-4,W,y+Math.random()*6-3);
+    ctx.strokeStyle=`rgba(${Math.random()>0.5?'50,25,10':'120,80,40'},${Math.random()*0.25+0.08})`;
+    ctx.lineWidth=thickness;ctx.stroke();
+  }
+}
+
+function drawCorkBg(ctx,W,H){
+  ctx.fillStyle='#c4a46b';ctx.fillRect(0,0,W,H);
+  for(let i=0;i<400;i++){
+    const x=Math.random()*W,y=Math.random()*H,r=Math.random()*6+2;
+    ctx.beginPath();ctx.ellipse(x,y,r,r*0.7,Math.random()*Math.PI,0,Math.PI*2);
+    const shade=Math.floor(Math.random()*40-20);
+    ctx.fillStyle=`rgba(${180+shade},${150+shade},${90+shade},0.35)`;ctx.fill();
+  }
+}
+
+function paintBg(ctx,W,H){
+  if(selectedBg==='custom'&&customBgSrc){
+    return new Promise(res=>{
+      const img=new Image();img.onload=()=>{ctx.drawImage(img,0,0,W,H);res();};img.src=customBgSrc;
+    });
+  }
+  if(selectedBg==='wood'){drawWoodBg(ctx,W,H);}
+  else if(selectedBg==='cork'){drawCorkBg(ctx,W,H);}
+  else{ctx.fillStyle=bgColors[selectedBg]||'#1a1a18';ctx.fillRect(0,0,W,H);}
+  return Promise.resolve();
+}
+
+
+  const img=new Image();img.onload=async()=>{
+    const size=2400,border=60,bottom=520;
     const pW=size+border*2,pH=size+border+bottom;
-    const pad=80;
-    const rad=-1.5*Math.PI/180;
-    const W=pW+pad*2,H=pH+pad*2;
     const flat=document.createElement('canvas');flat.width=pW;flat.height=pH;
     const fc=flat.getContext('2d');
+    fc.imageSmoothingEnabled=true;fc.imageSmoothingQuality='high';
     fc.fillStyle='#f5f0e8';fc.fillRect(0,0,pW,pH);
     const pg=document.createElement('canvas');pg.width=pW;pg.height=pH;drawGrain(pg,pW,pH);
     fc.save();fc.globalAlpha=0.06;fc.globalCompositeOperation='multiply';fc.drawImage(pg,0,0);fc.restore();
     applyEffectsToCanvas(fc,img,border,border,size,tintName,dateOn);
-    if(note){fc.save();fc.font='600 46px Caveat,cursive';fc.fillStyle='#2e2318';fc.textAlign='center';fc.shadowColor='rgba(80,50,20,0.25)';fc.shadowBlur=1;fc.shadowOffsetX=0.8;fc.shadowOffsetY=0.8;fc.fillText(note,pW/2,size+border+110);fc.restore();}
-    canvas.width=W;canvas.height=H;
-    const ctx=canvas.getContext('2d');
-    ctx.fillStyle='#1a1a18';ctx.fillRect(0,0,W,H);
-    ctx.save();ctx.translate(W/2,H/2);ctx.rotate(rad);ctx.drawImage(flat,-pW/2,-pH/2);ctx.restore();
-    cb(canvas.toDataURL('image/jpeg',0.93));
+    if(note){fc.save();fc.font=`600 ${Math.round(size*0.048)}px Caveat,cursive`;fc.fillStyle='#2e2318';fc.textAlign='center';fc.shadowColor='rgba(80,50,20,0.25)';fc.shadowBlur=2;fc.shadowOffsetX=1;fc.shadowOffsetY=1;fc.fillText(note,pW/2,size+border+Math.round(bottom*0.54));fc.restore();}
+    if(skewEnabled){
+      const pad=260,rad=-1.5*Math.PI/180,W=pW+pad*2,H=pH+pad*2;
+      canvas.width=W;canvas.height=H;
+      const ctx=canvas.getContext('2d');
+      ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+      await paintBg(ctx,W,H);
+      ctx.save();ctx.translate(W/2,H/2);ctx.rotate(rad);
+      ctx.shadowColor='rgba(0,0,0,0.55)';ctx.shadowBlur=120;ctx.shadowOffsetX=30;ctx.shadowOffsetY=50;
+      ctx.drawImage(flat,-pW/2,-pH/2);ctx.restore();
+    } else {
+      canvas.width=pW;canvas.height=pH;
+      const ctx=canvas.getContext('2d');
+      ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+      ctx.drawImage(flat,0,0);
+    }
+    cb(canvas.toDataURL('image/jpeg',0.97));
   };img.src=src;
 }
 
